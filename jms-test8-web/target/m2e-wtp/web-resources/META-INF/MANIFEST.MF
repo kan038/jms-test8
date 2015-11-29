@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Implementation-Title: jms-test8-web
+Implementation-Version: 1.0.0-SNAPSHOT
+Built-By: YK
+Implementation-Vendor-Id: com.sample.jms
+Build-Jdk: 1.8.0_65
+Created-By: Maven Integration for Eclipse
+Implementation-Vendor: TERASOLUNA Framework Team
+

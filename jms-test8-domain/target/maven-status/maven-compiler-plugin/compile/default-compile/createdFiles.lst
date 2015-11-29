@@ -1,0 +1,3 @@
+com\sample\jms\domain\model\Todo.class
+com\sample\jms\domain\service\TodoErrorHandler.class
+com\sample\jms\domain\service\TodoService.class

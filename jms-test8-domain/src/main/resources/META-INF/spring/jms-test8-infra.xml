@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:mybatis="http://mybatis.org/schema/mybatis-spring" xmlns:jms="http://www.springframework.org/schema/jms"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="
+        http://www.springframework.org/schema/beans
+        http://www.springframework.org/schema/beans/spring-beans.xsd
+        http://www.springframework.org/schema/jms
+	   	http://www.springframework.org/schema/jms/spring-jms-4.1.xsd
+        http://mybatis.org/schema/mybatis-spring
+        http://mybatis.org/schema/mybatis-spring.xsd">
+
+	<import resource="classpath:/META-INF/spring/jms-test8-env.xml" />
+
+	<!-- MyBatisは使わないのでコメントアウト -->
+	<!-- define the SqlSessionFactory -->
+	<!-- <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean"> -->
+	<!-- <property name="dataSource" ref="dataSource" /> -->
+	<!-- <property name="configLocation" value="classpath:/META-INF/mybatis/mybatis-config.xml" 
+		/> -->
+	<!-- </bean> -->
+
+	<!-- scan for Mappers -->
+	<!-- <mybatis:scan base-package="com.example.jms.domain.repository" /> -->
+
+	<bean id="amqConnectionFactory"
+		class="org.apache.activemq.ActiveMQConnectionFactory">
+		 <property name="brokerURL">
+      <value>tcp://localhost:61616</value>
+	    </property>
+	</bean>
+
+	<bean id="cachingConnectionFactory"
+		class="org.springframework.jms.connection.CachingConnectionFactory">
+		<property name="targetConnectionFactory" ref="amqConnectionFactory" />
+	</bean>
+
+
+	<bean id="jmsQueueTemplate" class="org.springframework.jms.core.JmsTemplate">
+		<property name="connectionFactory">
+			<ref bean="cachingConnectionFactory" />
+		</property>
+		<property name="destinationResolver">
+			<ref bean="jmsDestResolver" />
+		</property>
+		<property name="pubSubDomain" value="false"/>
+		<property name="deliveryMode" value="2"/>
+		<property name="sessionTransacted" value="true" />
+	</bean>
+
+
+	<bean id="jmsQueueNonTranTemplate" class="org.springframework.jms.core.JmsTemplate">
+		<property name="connectionFactory">
+			<ref bean="amqConnectionFactory" />
+		</property>
+		<property name="destinationResolver">
+			<ref bean="jmsDestResolver" />
+		</property>
+		<property name="pubSubDomain" value="false"/>
+		<property name="deliveryMode" value="2"/>
+		<property name="sessionTransacted" value="false" />
+	</bean>
+
+	<bean id="jmsTopicTemplate" class="org.springframework.jms.core.JmsTemplate">
+		<property name="connectionFactory">
+			<ref bean="cachingConnectionFactory" />
+		</property>
+		<property name="destinationResolver">
+			<ref bean="jmsDestResolver" />
+		</property>
+		<property name="pubSubDomain" value="true"/>
+		<property name="deliveryMode" value="2"/>
+		<property name="sessionTransacted" value="true" />
+	</bean>
+
+
+
+
+	<bean id="jmsDestResolver"
+		class="org.springframework.jms.support.destination.DynamicDestinationResolver" />
+
+	<jms:annotation-driven handler-method-factory="messageHandlerMethodFactory" />
+
+	<!-- Setting for transaction management -->
+	<bean id="jmsTransactionManager"
+		class="org.springframework.jms.connection.JmsTransactionManager">
+		<property name="connectionFactory" ref="cachingConnectionFactory" />
+	</bean>
+
+
+	<bean id="myContainerFactory"
+	        class="org.springframework.jms.config.DefaultJmsListenerContainerFactory">
+	    <property name="connectionFactory" ref="cachingConnectionFactory"/>
+	    <property name="destinationResolver" ref="jmsDestResolver"/>
+	    <property name="pubSubDomain" value="true"/>
+	    <property name="concurrency" value="3-10"/>
+	</bean>
+
+	<!-- JMS Namespace によるリスナーコンテナの設定 -->
+	<jms:listener-container container-type="default"
+		connection-factory="cachingConnectionFactory" 
+		factory-id="jmsListenerContainerFactory"
+		acknowledge="auto" error-handler="todoErrorHandler"
+		transaction-manager="jmsTransactionManager">
+		 <jms:listener destination="TestQueue4" ref="myContainerFactory" />
+	</jms:listener-container>
+
+	<bean id="messageHandlerMethodFactory"
+		class="org.springframework.messaging.handler.annotation.support.DefaultMessageHandlerMethodFactory">
+		<property name="validator" ref="validator" />
+	</bean>
+
+	<bean id="todoErrorHandler" class="com.sample.jms.domain.service.TodoErrorHandler" />
+
+	<bean id="transactionTemplateRequired"
+		class="org.springframework.transaction.support.TransactionTemplate">
+		<property name="transactionManager" ref="jmsTransactionManager" />
+		<property name="propagationBehaviorName" value="PROPAGATION_REQUIRED" />
+	</bean>
+
+	
+</beans>
