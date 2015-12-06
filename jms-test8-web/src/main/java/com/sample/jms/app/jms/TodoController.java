@@ -70,20 +70,38 @@ public class TodoController {
 
     // 同期受信パターン（受信）    
     @RequestMapping(value = "jms1_2")
-    public String initJms1_2(Model model) {
+    public String initJms1_2(Model model) throws InterruptedException {
         
     	Todo todo = new Todo();
     	todo.setTodoId("11111");
-    	    	
-    	jmsQueueTemplate.convertAndSend("TestQueue1", todo);
+    	// 別スレッドにしないと受け取れない。なんで？（同じスレッドだと受け取れない）
+    	SubThread sub = new SubThread();
+        sub.start();
+
+    	TimeUnit.SECONDS.sleep(1L);
+        
+    	//jmsQueueTemplate.convertAndSend("TestQueue1", todo);
     	
     	Todo retTodo =(Todo)jmsQueueTemplate.receiveAndConvert("TestQueue1");
+    	
+    	System.out.println("TestQueue1から受信しました。" + retTodo.getTodoId());
+    	
     	retTodo.setFinished(true);
     	
     	model.addAttribute("todo", retTodo);
     	
         return "todo/jmsRecieve";
     }
+    
+    
+    class SubThread extends Thread{
+    	  public void run(){
+    	    // サブ側で実行するプログラム処理を記述
+    		  Todo todo = new Todo();
+    	    	todo.setTodoId("111-111");
+    		  jmsQueueTemplate.convertAndSend("TestQueue1", todo);
+    	  }
+    	}
     
     
     // 非同期受信パターン（初期表示）
