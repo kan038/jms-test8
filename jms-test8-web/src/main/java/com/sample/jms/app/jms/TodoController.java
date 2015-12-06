@@ -1,7 +1,12 @@
 package com.sample.jms.app.jms;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
@@ -24,6 +29,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import com.sample.jms.domain.model.Todo;
+import com.sample.jms.domain.service.JmsFileUtils;
 import com.sample.jms.domain.service.TodoService;
 
 
@@ -96,13 +102,17 @@ public class TodoController {
     @RequestMapping(value = "jms2_2")
     public String initJms2_2(Model model) throws InterruptedException {
         
-    	Todo todo = new Todo();
-    	todo.setTodoId("22222");
-    	    	
-    	jmsQueueTemplate.convertAndSend("TestQueue2", todo);
-    	//int i=1/0;
+    	// ランダム値を作成
+    	UUID id = UUID.randomUUID();
     	
-    	TimeUnit.SECONDS.sleep(3L);
+    	Todo todo = new Todo();
+    	todo.setTodoId(id.toString());
+    	
+    	
+    	    	
+    	// 送信
+    	jmsQueueTemplate.convertAndSend("TestQueue2", todo);
+  
     	
     	Todo retTodo =(Todo)jmsQueueTemplate.receiveAndConvert("ReplyTestQueue2");
     	retTodo.setFinished(true);
@@ -287,6 +297,65 @@ public class TodoController {
     	jmsQueueTemplate.convertAndSend("TestQueue7", todo);
     	
     	TimeUnit.SECONDS.sleep(3L);
+    	
+    	Todo retTodo = todo;
+    	retTodo.setFinished(true);
+    	model.addAttribute("todo", retTodo);
+    	
+        return "todo/jmsRecieve";
+    }
+    
+    // 非同期受信パターン（初期表示）
+    @RequestMapping(value = "jms8_1")
+    public String initJms8_1(Model model) {
+        
+    	Todo todo = new Todo();
+    	
+    	model.addAttribute("todo", todo);
+    	model.addAttribute("link","jms8_2");
+    	
+        return "todo/jmsSend";
+    }
+
+    // 非同期受信パターン（受信）
+    @RequestMapping(value = "jms8_2")
+    public String initJms8_2(Model model) throws InterruptedException, IOException {
+        
+    	// ランダム値を作成
+    	UUID id = UUID.randomUUID();
+    	
+    	Todo todo = new Todo();
+    	todo.setTodoId(id.toString());
+    	
+    	
+    	    	
+    	// 送信
+    	jmsQueueTemplate.convertAndSend("TestQueue8", todo);
+    	
+    	// 1秒待つ
+    	System.out.println("1秒俟ちます");
+    	TimeUnit.SECONDS.sleep(1L);
+    	
+    	String filePath = "D:\\work\\" + id +".dat";
+    	
+    	Path path = FileSystems.getDefault().getPath(filePath);
+    	List<String> result = null;
+    	
+    	for (int i=0; i<5; i++) {
+    		
+    		if (JmsFileUtils.existsFile(filePath) == true) {
+    			result = JmsFileUtils.readFileToList(path);
+    		}
+    		
+    		TimeUnit.SECONDS.sleep(1L);
+    		
+    	}
+    	
+    	System.out.println("結果出します。" +  result);
+    	
+    	
+    	
+  
     	
     	Todo retTodo = todo;
     	retTodo.setFinished(true);

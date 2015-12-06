@@ -14,6 +14,11 @@ import org.springframework.validation.annotation.Validated;
 
 import com.sample.jms.domain.model.Todo;
 
+import java.io.IOException;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -110,5 +115,20 @@ public class TodoService {
         return todo;
 
     }
+    
+    @JmsListener(destination = "TestQueue8")
+    public void receive8(Todo todo, @Headers MessageHeaders headers) throws InterruptedException, IOException {
+
+    	String id = todo.getTodoId();
+    	List<String> list = new ArrayList<String>();
+    	list.add(id);
+    	Path path = FileSystems.getDefault().getPath("D:\\work\\" + id +".dat");
+    	JmsFileUtils.writeListToFile(path, list);
+    	
+    	System.out.println("Received TodoID : " + todo.getTodoId());
+    	System.out.println("Received headers : " + headers);              
+
+    }
+
     
 }
