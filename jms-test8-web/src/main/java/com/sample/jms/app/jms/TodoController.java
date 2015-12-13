@@ -36,13 +36,16 @@ import com.sample.jms.domain.service.TodoService;
 
 @Controller
 @RequestMapping("todo")
-@Transactional("jmsTransactionManager")
+//@Transactional("jmsTransactionManager")
 public class TodoController {
     @Inject // (1)
     TodoService todoService;
 
     @Inject
     private JmsTemplate jmsQueueTemplate;
+    
+    @Inject
+    private JmsTemplate jmsQueuePurgeTemplate;
     
     @Inject
     private JmsTemplate jmsTopicTemplate;
@@ -58,6 +61,32 @@ public class TodoController {
         TodoForm form = new TodoForm();
         return form;
     }
+    
+
+    // 同期受信パターン（初期表示）
+    @RequestMapping(value = "init")
+    public String init(Model model) {
+    	Todo todo = new Todo();
+    	model.addAttribute("todo", todo);
+    	model.addAttribute("link","jms1_1");
+    	
+    	// こういう感じで試験の最初と最後にパージさせるか？
+    	// そうでもしないと残ってしまう。
+    	while (true) {
+    		Object obj = jmsQueuePurgeTemplate.receive("TestQueue1");
+    		if (obj == null) {
+    			break;
+    		} else {
+    			System.out.println("パージしました");
+    		}
+    	}
+    	
+    	
+    	
+        return "todo/jmsSend";
+    }
+
+    
    
     // 同期受信パターン（初期表示）
     @RequestMapping(value = "jms1_1")
@@ -86,6 +115,8 @@ public class TodoController {
     	
     	System.out.println("TestQueue1から受信しました。" + retTodo.getTodoId());
     	
+    	
+//    	Todo retTodo = todo;
     	retTodo.setFinished(true);
     	
     	model.addAttribute("todo", retTodo);

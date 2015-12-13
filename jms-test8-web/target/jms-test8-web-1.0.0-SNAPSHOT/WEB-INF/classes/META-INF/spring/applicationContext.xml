@@ -54,5 +54,8 @@
         class="org.terasoluna.gfw.web.exception.ExceptionLoggingFilter" >
         <property name="exceptionLogger" ref="exceptionLogger" />
     </bean>
+    
+    <bean id="validator" class="org.springframework.validation.beanvalidation.LocalValidatorFactoryBean"/>
+ 
 
 </beans>
